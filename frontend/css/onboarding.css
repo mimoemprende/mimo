@@ -1,0 +1,92 @@
+/* ===== MIMO · Onboarding interactivo =====
+   Usa las variables de la paleta definidas en styles.css (--azul, --cian, --cian2, --amarillo, --naranja, --gris, --tinta, --suave).
+   Todo está prefijado con "onb-" para no chocar con tus estilos existentes. */
+#mimo-onb, #onb-fab, #onb-menu, #onb-toast {
+  --o-azul: var(--azul, #0A46BF); --o-cian: var(--cian, #0CC8F2); --o-cian2: var(--cian2, #0CDBF2);
+  --o-amarillo: var(--amarillo, #F2CB07); --o-naranja: var(--naranja, #FF8900); --o-tinta: var(--tinta, #0d2250);
+  --o-suave: var(--suave, #5b6b8c); --o-gris: var(--gris, #F2F2F2);
+  font-family: 'Figtree', system-ui, sans-serif; color: var(--o-tinta); line-height: 1.45;
+}
+
+/* Capa que bloquea clics fuera del paso (y oscurece cuando no hay elemento destacado) */
+.onb-block { position: fixed; inset: 0; z-index: 9000; background: transparent; transition: background .3s; }
+.onb-block.dim { background: rgba(13, 34, 80, .78); backdrop-filter: blur(2px); }
+.onb-block.free { pointer-events: none; }
+
+/* Foco (spotlight) */
+.onb-spot { position: fixed; z-index: 9001; border-radius: 14px; pointer-events: none; opacity: 0;
+  box-shadow: 0 0 0 9999px rgba(13, 34, 80, .74), 0 0 0 3px var(--o-cian2), 0 0 24px 4px rgba(12, 219, 242, .55);
+  transition: top .35s cubic-bezier(.2,.8,.2,1), left .35s cubic-bezier(.2,.8,.2,1), width .35s cubic-bezier(.2,.8,.2,1), height .35s cubic-bezier(.2,.8,.2,1), opacity .25s; }
+.onb-spot::after { content: ""; position: absolute; inset: -6px; border-radius: 18px; border: 2px solid var(--o-naranja); animation: onb-pulse 1.8s ease-out infinite; }
+@keyframes onb-pulse { 0% { opacity: .9; transform: scale(.98); } 100% { opacity: 0; transform: scale(1.06); } }
+
+/* Tarjeta del paso */
+.onb-card { position: fixed; z-index: 9003; width: 380px; max-width: calc(100vw - 24px); background: #fff; border-radius: 20px; padding: 18px 18px 14px;
+  box-shadow: 0 24px 70px rgba(10, 70, 191, .45), 0 2px 0 rgba(255,255,255,.6) inset; overflow: hidden;
+  transition: top .35s cubic-bezier(.2,.8,.2,1), left .35s cubic-bezier(.2,.8,.2,1), opacity .2s; }
+.onb-card.enter { animation: onb-in .35s cubic-bezier(.2,.8,.2,1); }
+@keyframes onb-in { from { opacity: 0; transform: translateY(10px) scale(.97); } to { opacity: 1; transform: none; } }
+.onb-card.center { top: 50% !important; left: 50% !important; width: 440px; transform: translate(-50%, -50%); }
+.onb-card.center.enter { animation: onb-in-c .4s cubic-bezier(.2,.8,.2,1); }
+@keyframes onb-in-c { from { opacity: 0; transform: translate(-50%, -46%) scale(.96); } to { opacity: 1; transform: translate(-50%, -50%); } }
+.onb-card.dock { left: 8px !important; right: 8px; bottom: 8px; top: auto !important; width: auto; max-height: 58vh; overflow-y: auto; transform: none; }
+.onb-card.center.dock { top: auto !important; transform: none; }
+
+.onb-bar { position: absolute; left: 0; top: 0; right: 0; height: 6px; background: #e6ebf5; }
+.onb-bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--o-azul), var(--o-cian), var(--o-cian2)); border-radius: 0 6px 6px 0; transition: width .45s cubic-bezier(.2,.8,.2,1); }
+.onb-x { position: absolute; right: 8px; top: 14px; width: 32px; height: 32px; border: 0; border-radius: 50%; background: transparent; font-size: 1.4rem; line-height: 1; cursor: pointer; color: var(--o-suave); }
+.onb-x:hover { background: var(--o-gris); }
+.onb-top { display: flex; align-items: center; gap: 10px; margin: 6px 36px 8px 0; }
+.onb-badge { width: 42px; height: 42px; flex: none; border-radius: 14px; display: grid; place-items: center; font-size: 1.4rem;
+  background: linear-gradient(135deg, var(--o-azul), var(--o-cian)); box-shadow: 0 6px 16px rgba(10, 70, 191, .3); animation: onb-bob 3s ease-in-out infinite; }
+.onb-card[data-role="dueno"] .onb-badge { background: linear-gradient(135deg, var(--o-naranja), var(--o-amarillo)); box-shadow: 0 6px 16px rgba(255, 137, 0, .35); }
+.onb-card[data-role="admin"] .onb-badge { background: linear-gradient(135deg, var(--o-tinta), var(--o-azul)); }
+@keyframes onb-bob { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-3px) rotate(-4deg); } }
+.onb-meta { display: flex; flex-direction: column; font-size: .76rem; font-weight: 700; color: var(--o-suave); text-transform: uppercase; letter-spacing: .04em; }
+.onb-meta b { color: var(--o-azul); }
+.onb-card h3 { font: 800 1.3rem/1.15 'Bricolage Grotesque', 'Figtree', sans-serif; letter-spacing: -.02em; margin: 0 0 6px; }
+.onb-body { font-size: .95rem; color: #33436b; }
+.onb-body p { margin: 0 0 8px; } .onb-body ul { margin: 6px 0; padding-left: 18px; } .onb-body li { margin-bottom: 4px; }
+.onb-body .tag { margin: 2px 2px 2px 0; }
+.onb-flow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 8px 0; font-weight: 800; color: var(--o-suave); }
+.onb-note { background: #fff3b8; color: #5f4d00; padding: 8px 10px; border-radius: 10px; font-size: .86rem; font-weight: 600; margin: 8px 0; }
+.onb-hint { margin-top: 10px; padding: 8px 10px; border-radius: 10px; background: #eaf9fe; border-left: 4px solid var(--o-cian); font-size: .86rem; font-weight: 700; color: var(--o-azul); }
+.onb-hint.ok { background: #dcf5ea; border-left-color: #12805c; color: #12805c; animation: onb-in .3s; }
+.onb-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+.onb-foot .grp { display: flex; gap: 8px; margin-left: auto; }
+.onb-link { background: none; border: 0; padding: 6px 4px; color: var(--o-suave); font-weight: 700; font-size: .85rem; cursor: pointer; text-decoration: underline; }
+.onb-link:hover { color: var(--o-azul); }
+.onb-next.pulse { animation: onb-glow 1.2s ease-in-out infinite; }
+@keyframes onb-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 137, 0, .6); } 50% { box-shadow: 0 0 0 8px rgba(255, 137, 0, 0); } }
+.onb-card .btn[hidden], .onb-card [hidden] { display: none !important; }
+
+/* Selector de rol (visitantes) */
+.onb-choices { display: grid; gap: 10px; margin-top: 12px; }
+.onb-choice { display: flex; gap: 12px; align-items: center; text-align: left; width: 100%; border: 2px solid #dbe3f5; background: #fff; border-radius: 14px; padding: 12px; cursor: pointer; transition: transform .15s, border-color .15s, box-shadow .15s; }
+.onb-choice:hover, .onb-choice:focus-visible { border-color: var(--o-azul); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(10, 70, 191, .15); outline: none; }
+.onb-choice .ic { font-size: 1.8rem; } .onb-choice b { display: block; font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.05rem; } .onb-choice span.s { font-size: .85rem; color: var(--o-suave); }
+
+/* Confeti de cierre */
+.onb-confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.onb-confetti i { position: absolute; top: -12px; width: 8px; height: 12px; border-radius: 2px; animation: onb-fall 2.6s linear forwards; }
+@keyframes onb-fall { to { transform: translateY(420px) rotate(540deg); opacity: 0; } }
+
+/* Botón flotante y menú */
+#onb-fab { position: fixed; left: 14px; bottom: 14px; z-index: 8000; display: inline-flex; align-items: center; gap: 8px; border: 0; cursor: pointer; padding: 10px 16px 10px 12px;
+  border-radius: 999px; background: linear-gradient(135deg, var(--o-azul), var(--o-cian)); color: #fff; font-weight: 800; box-shadow: 0 8px 24px rgba(10, 70, 191, .4); transition: transform .15s; }
+#onb-fab:hover { transform: translateY(-2px); } #onb-fab:focus-visible { outline: 3px solid var(--o-amarillo); outline-offset: 2px; }
+#onb-fab .q { width: 26px; height: 26px; border-radius: 50%; background: #fff; color: var(--o-azul); display: grid; place-items: center; font-weight: 800; }
+#onb-fab.pulse::before { content: ""; position: absolute; inset: 0; border-radius: 999px; border: 2px solid var(--o-naranja); animation: onb-pulse 1.6s ease-out infinite; }
+#onb-menu { position: fixed; left: 14px; bottom: 68px; z-index: 8001; background: #fff; border-radius: 16px; padding: 8px; min-width: 250px; box-shadow: 0 16px 44px rgba(13, 34, 80, .3); animation: onb-in .2s; }
+#onb-menu button { display: flex; gap: 10px; align-items: center; width: 100%; text-align: left; border: 0; background: none; padding: 10px 12px; border-radius: 10px; font-weight: 700; cursor: pointer; color: var(--o-tinta); }
+#onb-menu button:hover, #onb-menu button:focus-visible { background: #eef4ff; outline: none; }
+#onb-menu small { display: block; font-weight: 600; color: var(--o-suave); padding: 4px 12px 6px; }
+#onb-toast { position: fixed; left: 14px; bottom: 68px; z-index: 8001; max-width: 320px; background: #fff; border-radius: 16px; padding: 14px; box-shadow: 0 16px 44px rgba(13, 34, 80, .3); border-left: 6px solid var(--o-naranja); animation: onb-in .35s; }
+#onb-toast p { margin: 0 0 10px; font-weight: 600; } #onb-toast .row { display: flex; gap: 8px; }
+
+@media (max-width: 640px) { #onb-fab .t { display: none; } #onb-fab { padding: 10px; } #onb-menu, #onb-toast { right: 14px; max-width: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .onb-spot, .onb-card, .onb-bar i, .onb-block { transition: none !important; }
+  .onb-spot::after, .onb-badge, .onb-next.pulse, #onb-fab.pulse::before, .onb-confetti i, .onb-card.enter { animation: none !important; }
+  .onb-confetti { display: none; }
+}
