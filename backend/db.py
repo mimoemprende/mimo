@@ -54,6 +54,9 @@ def init_db():
     c = conn(); c.executescript(SCHEMA)
     if not c.execute("SELECT 1 FROM lavaderos LIMIT 1").fetchone():
         seed(c)
+        if os.environ.get("DEMO_DATA") == "1":      # solo en bases nuevas y solo si lo activas
+            from .demo_data import seed_demo
+            seed_demo(c)
     user = os.environ.get("ADMIN_USER", "admin")
     pw = os.environ.get("ADMIN_PASSWORD")
     if not c.execute("SELECT 1 FROM admins").fetchone():
