@@ -71,5 +71,6 @@ def seed_demo(c):
         if prox <= hoy + timedelta(days=3):
             c.execute("INSERT OR IGNORE INTO recordatorios(cliente_id,vehiculo_id,fecha_programada) VALUES(?,?,?)", (cid, vid, iso(prox)))
     c.execute("UPDATE recordatorios SET estado='enviado',actualizado=datetime('now') WHERE id=(SELECT MIN(id) FROM recordatorios)")
+    c.execute("INSERT INTO duenos(usuario,pass_hash,lavadero_id) VALUES(?,?,?)", ("dueno1", ph, 1))
     c.execute("COMMIT")
-    print("[MIMO] Datos de demostración cargados (DEMO_DATA=1). Cliente de prueba: 3000000000 / " + PASSWORD_DEMO)
+    print("[MIMO] Datos de demostración cargados (DEMO_DATA=1). Cliente de prueba: 3000000000 / " + PASSWORD_DEMO + " · Dueño de prueba (lavadero 1): dueno1 / " + PASSWORD_DEMO)

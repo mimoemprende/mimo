@@ -2,7 +2,7 @@ import os, re, math, time, secrets, sqlite3
 from datetime import datetime, date, timedelta
 from zoneinfo import ZoneInfo
 from functools import wraps
-from flask import Flask, request, jsonify, session, send_from_directory
+from flask import Flask, request, jsonify, session, send_from_directory, g
 from werkzeug.security import generate_password_hash, check_password_hash
 from .db import conn, init_db
 
@@ -86,6 +86,15 @@ def admin_req(f):
     @wraps(f)
     def w(*a, **k):
         if not session.get("aid"): return err("No autorizado", 401)
+        return f(*a, **k)
+    return w
+
+def dueno_req(f):
+    @wraps(f)
+    def w(*a, **k):
+        d = one("SELECT * FROM duenos WHERE id=? AND activo=1", (session.get("oid"),)) if session.get("oid") else None
+        if not d: return err("No autorizado", 401)
+        g.lav = d["lavadero_id"]
         return f(*a, **k)
     return w
 
@@ -382,15 +391,13 @@ def a_reservas():
     return jsonify(fmt(rows(q, (est,) if est else ())))
 
 TRANS = {"pendiente": ("confirmada", "cancelada"), "confirmada": ("completada", "cancelada")}
-@app.post("/api/admin/reservas/<int:i>/estado")
-@admin_req
-def a_estado(i):
-    nuevo = (request.get_json(silent=True) or {}).get("estado")
+def cambiar_estado(i, nuevo, lav=None):
+    """Transición de estado de una reserva. lav = restringe a un lavadero (cuentas de dueño)."""
     c = conn()
     try:
         c.execute("BEGIN IMMEDIATE")
         r = c.execute("SELECT * FROM reservas WHERE id=?", (i,)).fetchone()
-        if not r: raise ValueError("Reserva no encontrada")
+        if not r or (lav and r["lavadero_id"] != lav): raise ValueError("Reserva no encontrada")
         if nuevo not in TRANS.get(r["estado"], ()): raise ValueError(f"No se puede pasar de {r['estado']} a {nuevo}")
         if nuevo == "completada":
             if pdate(r["fecha"]) > now().date(): raise ValueError("No se puede completar una reserva futura")
@@ -402,6 +409,11 @@ def a_estado(i):
     finally: c.close()
     return jsonify(ok=True)
 
+@app.post("/api/admin/reservas/<int:i>/estado")
+@admin_req
+def a_estado(i):
+    return cambiar_estado(i, (request.get_json(silent=True) or {}).get("estado"))
+
 @app.get("/api/admin/lavaderos")
 @admin_req
 def a_lavs():
@@ -412,9 +424,12 @@ def a_lavs():
 @app.put("/api/admin/lavaderos/<int:i>")
 @admin_req
 def a_upd_lav(i):
-    d = request.get_json(silent=True) or {}
+    return actualizar_lavadero(i, request.get_json(silent=True) or {})
+
+def actualizar_lavadero(i, d, permitidos=None):
     campos = {"nombre": str, "direccion": str, "barrio": str, "zona": str, "telefono": str, "horario_txt": str, "horario_cod": str,
               "tipo": str, "vehiculos": str, "puestos": int, "lat": float, "lng": float, "activo": int, "horario_publicado": int}
+    if permitidos: campos = {k: v for k, v in campos.items() if k in permitidos}
     sets, vals = [], []
     for k, t in campos.items():
         if k in d:
@@ -476,6 +491,100 @@ def a_rec_estado(i):
     if e not in ("pendiente", "enviado", "cancelado"): return err("Estado inválido")
     c = conn(); c.execute("UPDATE recordatorios SET estado=?,actualizado=? WHERE id=?", (e, now().isoformat(timespec="seconds"), i)); c.close()
     return jsonify(ok=True)
+
+# ---------- admin: cuentas de dueños de lavaderos ----------
+@app.get("/api/admin/duenos")
+@admin_req
+def a_duenos():
+    return jsonify(rows("SELECT d.id,d.usuario,d.activo,d.creado,d.lavadero_id,l.nombre lavadero FROM duenos d JOIN lavaderos l ON l.id=d.lavadero_id ORDER BY d.id DESC"))
+
+@app.post("/api/admin/duenos")
+@admin_req
+def a_add_dueno():
+    d = request.get_json(silent=True) or {}
+    u = str(d.get("usuario", "")).strip().lower(); pw = str(d.get("password", ""))
+    if not re.fullmatch(r"[a-z0-9._-]{3,30}", u): return err("Usuario: 3-30 caracteres (letras, números, punto, guion)")
+    if len(pw) < 8: return err("La contraseña debe tener mínimo 8 caracteres")
+    if not one("SELECT 1 x FROM lavaderos WHERE id=?", (d.get("lavadero_id"),)): return err("Lavadero inválido")
+    c = conn()
+    try: c.execute("INSERT INTO duenos(usuario,pass_hash,lavadero_id) VALUES(?,?,?)", (u, generate_password_hash(pw), int(d["lavadero_id"])))
+    except sqlite3.IntegrityError: return err("Ese usuario ya existe", 409)
+    finally: c.close()
+    return jsonify(ok=True)
+
+@app.put("/api/admin/duenos/<int:i>")
+@admin_req
+def a_upd_dueno(i):
+    d = request.get_json(silent=True) or {}; c = conn()
+    try:
+        if d.get("password"):
+            if len(str(d["password"])) < 8: return err("La contraseña debe tener mínimo 8 caracteres")
+            c.execute("UPDATE duenos SET pass_hash=? WHERE id=?", (generate_password_hash(str(d["password"])), i))
+        if "activo" in d: c.execute("UPDATE duenos SET activo=? WHERE id=?", (1 if d["activo"] else 0, i))
+    finally: c.close()
+    return jsonify(ok=True)
+
+# ---------- panel del dueño del lavadero (solo ve y edita SU lavadero) ----------
+@app.post("/api/dueno/login")
+def dueno_login():
+    d = request.get_json(silent=True) or {}
+    if throttle("o" + request.remote_addr, 6): return err("Demasiados intentos. Espera unos minutos.", 429)
+    o = one("SELECT * FROM duenos WHERE usuario=? AND activo=1", (str(d.get("usuario", "")).strip().lower(),))
+    if not o or not check_password_hash(o["pass_hash"], str(d.get("password", ""))): return err("Credenciales incorrectas", 401)
+    session.clear(); session.permanent = True; session["oid"] = o["id"]
+    return jsonify(ok=True)
+
+@app.get("/api/dueno/yo")
+def dueno_yo():
+    o = one("SELECT d.usuario,l.nombre lavadero FROM duenos d JOIN lavaderos l ON l.id=d.lavadero_id WHERE d.id=? AND d.activo=1", (session.get("oid"),)) if session.get("oid") else None
+    return jsonify(dueno=o)
+
+@app.get("/api/dueno/resumen")
+@dueno_req
+def dueno_resumen():
+    n = lambda e: one("SELECT COUNT(*) n FROM reservas WHERE lavadero_id=? AND estado=?", (g.lav, e))["n"]
+    return jsonify(pendientes=n("pendiente"), confirmadas=n("confirmada"), completadas=n("completada"),
+                   lavados_mes=one("SELECT COUNT(*) n FROM lavados WHERE lavadero_id=? AND substr(fecha,1,7)=?", (g.lav, now().strftime("%Y-%m")))["n"])
+
+@app.get("/api/dueno/reservas")
+@dueno_req
+def dueno_reservas():
+    est = request.args.get("estado")
+    q = RES_SQL + "WHERE r.lavadero_id=? " + ("AND r.estado=? " if est else "") + "ORDER BY r.fecha DESC,r.ini DESC LIMIT 300"
+    return jsonify(fmt(rows(q, (g.lav, est) if est else (g.lav,))))
+
+@app.post("/api/dueno/reservas/<int:i>/estado")
+@dueno_req
+def dueno_estado(i):
+    return cambiar_estado(i, (request.get_json(silent=True) or {}).get("estado"), g.lav)
+
+@app.get("/api/dueno/lavadero")
+@dueno_req
+def dueno_lavadero():
+    l = one("SELECT * FROM lavaderos WHERE id=?", (g.lav,))
+    l["servicios"] = rows("SELECT * FROM servicios WHERE lavadero_id=? ORDER BY id", (g.lav,))
+    return jsonify(l)
+
+@app.put("/api/dueno/lavadero")
+@dueno_req
+def dueno_upd_lavadero():
+    return actualizar_lavadero(g.lav, request.get_json(silent=True) or {}, {"telefono", "horario_txt", "horario_cod", "horario_publicado", "puestos"})
+
+@app.post("/api/dueno/servicios")
+@dueno_req
+def dueno_add_serv():
+    v = serv_vals(request.get_json(silent=True) or {})
+    if not v: return err("Datos de servicio inválidos (nombre, duración 10–480 min y al menos un precio)")
+    c = conn(); c.execute("INSERT INTO servicios(lavadero_id,nombre,descripcion,duracion_min,precio_auto,precio_camioneta,precio_suv,precio_moto,activo) VALUES(?,?,?,?,?,?,?,?,?)", (g.lav, *v)); c.close()
+    return jsonify(ok=True)
+
+@app.put("/api/dueno/servicios/<int:i>")
+@dueno_req
+def dueno_upd_serv(i):
+    v = serv_vals(request.get_json(silent=True) or {})
+    if not v: return err("Datos de servicio inválidos")
+    c = conn(); n = c.execute("UPDATE servicios SET nombre=?,descripcion=?,duracion_min=?,precio_auto=?,precio_camioneta=?,precio_suv=?,precio_moto=?,activo=? WHERE id=? AND lavadero_id=?", (*v, i, g.lav)).rowcount; c.close()
+    return jsonify(ok=True) if n else err("Servicio no encontrado", 404)
 
 # ---------- frontend estático ----------
 @app.get("/")
