@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}{% endblock %}</title>
+<meta name="description" content="{{ desc }}">
+<meta name="robots" content="{{ robots|default('index,follow') }}">
+{% if url %}<link rel="canonical" href="{{ url }}">{% endif %}
+<meta property="og:type" content="website"><meta property="og:site_name" content="MIMO"><meta property="og:locale" content="es_CO">
+{% if url %}<meta property="og:url" content="{{ url }}">{% endif %}<meta property="og:title" content="{{ self.title() }}"><meta property="og:description" content="{{ desc }}">
+<meta property="og:image" content="{{ base }}/assets/imagotipo.jpeg"><meta property="og:image:width" content="1600"><meta property="og:image:height" content="1600">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="/assets/imagotipo.jpeg"><meta name="theme-color" content="#0A46BF">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/styles.css">
+{% if ld %}<script type="application/ld+json">{{ ld|safe }}</script>{% endif %}
+</head><body>
+<a class="skip" href="#contenido">Saltar al contenido</a>
+<header class="top"><div class="wrap">
+  <a class="brand" href="/"><img src="/assets/imagotipo.jpeg" alt="" width="44" height="44">MIMO</a>
+  <nav aria-label="Principal"><a class="t" href="/">Lavaderos</a><a class="t" href="/#/beneficios">Beneficios</a><a href="/#/cuenta">Mi cuenta</a></nav>
+</div></header>
+<main id="contenido" class="wrap" style="padding-top:22px">{% block main %}{% endblock %}</main>
+<footer><div class="wrap">
+  <b>MIMO</b> · Reservas de lavaderos en Santa Marta, Colombia. Precios en pesos colombianos (COP).<br>
+  Los datos de los establecimientos provienen del listado de lavaderos de Santa Marta; los precios son de referencia hasta que cada lavadero confirme su tarifa.
+  {% if zonas %}<br><nav aria-label="Lavaderos por zona"><b>Lavaderos por zona:</b> {% for z in zonas|sort %}<a href="/zona/{{ slugify(z) }}">{{ z }}</a>{% if not loop.last %} · {% endif %}{% endfor %}</nav>{% endif %}
+</div></footer></body></html>

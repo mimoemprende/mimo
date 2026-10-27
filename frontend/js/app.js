@@ -75,7 +75,7 @@ async function vistaFicha(id) {
   $app.innerHTML = `<div class="wrap" style="padding-top:22px">
    <a href="#/">← Volver a lavaderos</a>
    <div class="cols" style="margin-top:12px"><div>
-    <div class="panel"><div class="foto card" style="box-shadow:none"><div class="foto" style="border-radius:12px"><img class="ph" src="assets/imagotipo.jpeg" alt=""><img class="real" src="${fotoUrl(l.id)}" alt="Foto de ${esc(l.nombre)}" onerror="this.remove()"></div></div>
+    <div class="panel"><div class="foto card" style="box-shadow:none"><div class="foto" style="border-radius:12px"><img class="ph" src="assets/imagotipo-400.webp" alt=""><img class="real" src="${fotoUrl(l.id)}" alt="Foto de ${esc(l.nombre)}" onerror="this.remove()"></div></div>
      <h2 style="margin-top:14px">${esc(l.nombre)}</h2>
      <p class="meta">${esc(l.tipo)}</p>
      ${l.horario_publicado ? "" : `<div class="msg info">El listado no publica el horario de este lavadero. Las reservas quedan pendientes hasta que se confirme.</div>`}
@@ -223,6 +223,9 @@ function vistaRoute() {
   const [path, qs] = (location.hash.slice(1) || "/").split("?"); const q = new URLSearchParams(qs || ""); window.scrollTo(0, 0);
   const m = path.match(/^\/(l|reservar)\/(\d+)$/);
   if (q.get("v") && path === "/") { S.tipo = q.get("v"); }
+  const T = { "/cuenta": "Mi cuenta", "/beneficios": "Beneficios" };
+  document.title = (m ? (m[1] === "l" ? "Ficha del lavadero" : "Reservar lavado") : T[path] ? T[path] : "Reserva tu lavadero en Santa Marta") + " · MIMO";
+  if (m && m[1] === "l" && !window.MIMO_API) { location.replace("/lavaderos/" + m[2]); return; }   // enlaces antiguos #/l/N -> ficha indexable
   if (m && m[1] === "l") vistaFicha(+m[2]);
   else if (m) vistaReserva(+m[2], q);
   else if (path === "/cuenta") vistaCuenta();

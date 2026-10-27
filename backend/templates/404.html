@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% set robots = 'noindex,follow' %}
+{% block title %}Página no encontrada | MIMO{% endblock %}
+{% block main %}<div class="panel" style="max-width:620px;margin:30px auto"><h1 style="font-size:2rem">No encontramos esa página</h1>
+<p>El enlace puede estar desactualizado. Puedes volver al inicio y buscar un lavadero por zona, servicio o precio.</p>
+<a class="btn cta" href="/">Buscar lavaderos en Santa Marta</a>
+{% if zonas %}<p class="meta" style="margin-top:14px">O explora por zona: {% for z in zonas|sort %}<a href="/zona/{{ slugify(z) }}">{{ z }}</a>{% if not loop.last %} · {% endif %}{% endfor %}</p>{% endif %}</div>{% endblock %}

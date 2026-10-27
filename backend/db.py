@@ -39,10 +39,6 @@ CREATE TABLE IF NOT EXISTS recordatorios(
  vehiculo_id INTEGER NOT NULL REFERENCES vehiculos(id), fecha_programada TEXT NOT NULL,
  estado TEXT NOT NULL DEFAULT 'pendiente' CHECK(estado IN ('pendiente','enviado','cancelado')),
  actualizado TEXT, UNIQUE(vehiculo_id, fecha_programada));
-CREATE TABLE IF NOT EXISTS duenos(
- id INTEGER PRIMARY KEY AUTOINCREMENT, usuario TEXT UNIQUE NOT NULL, pass_hash TEXT NOT NULL,
- lavadero_id INTEGER NOT NULL REFERENCES lavaderos(id) ON DELETE CASCADE, activo INTEGER NOT NULL DEFAULT 1,
- creado TEXT NOT NULL DEFAULT (datetime('now','-5 hours')));
 CREATE TABLE IF NOT EXISTS admins(
  id INTEGER PRIMARY KEY AUTOINCREMENT, usuario TEXT UNIQUE NOT NULL, pass_hash TEXT NOT NULL);
 """
@@ -58,9 +54,6 @@ def init_db():
     c = conn(); c.executescript(SCHEMA)
     if not c.execute("SELECT 1 FROM lavaderos LIMIT 1").fetchone():
         seed(c)
-        if os.environ.get("DEMO_DATA") == "1":      # solo en bases nuevas y solo si lo activas
-            from .demo_data import seed_demo
-            seed_demo(c)
     user = os.environ.get("ADMIN_USER", "admin")
     pw = os.environ.get("ADMIN_PASSWORD")
     if not c.execute("SELECT 1 FROM admins").fetchone():

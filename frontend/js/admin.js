@@ -11,9 +11,9 @@ function login() {
 }
 function panel() {
   const s = $("#salir"); s.classList.remove("hide"); s.onclick = async (e) => { e.preventDefault(); await API.post("/logout"); login(); };
-  A.innerHTML = `<div class="tabs">${[["resumen", "Resumen y clientes"], ["reservas", "Reservas"], ["lavaderos", "Lavaderos y servicios"], ["recordatorios", "Recordatorios"], ["duenos", "Dueños de lavaderos"]].map(([k, v]) => `<button class="chip ${tab === k ? "on" : ""}" data-t="${k}">${v}</button>`).join("")}</div><div id="cont"></div>`;
+  A.innerHTML = `<div class="tabs">${[["resumen", "Resumen y clientes"], ["reservas", "Reservas"], ["lavaderos", "Lavaderos y servicios"], ["recordatorios", "Recordatorios"]].map(([k, v]) => `<button class="chip ${tab === k ? "on" : ""}" data-t="${k}">${v}</button>`).join("")}</div><div id="cont"></div>`;
   A.querySelectorAll("[data-t]").forEach((b) => b.onclick = () => { tab = b.dataset.t; panel(); });
-  ({ resumen: tResumen, reservas: tReservas, lavaderos: tLavs, recordatorios: tRec, duenos: tDuenos })[tab]();
+  ({ resumen: tResumen, reservas: tReservas, lavaderos: tLavs, recordatorios: tRec })[tab]();
 }
 const wa = (n) => "https://wa.me/57" + n;
 
@@ -54,13 +54,4 @@ function tRec() { guard(async () => {
   <div class="scroll"><table><thead><tr><th>Cliente</th><th>Vehículo</th><th>Fecha recomendada</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>${r.map((x) => `<tr><td>${esc(x.nombre)}</td><td>${VEH[x.tipo]}${x.placa ? " · " + esc(x.placa) : ""}</td><td>${fechaLarga(x.fecha_programada)}</td><td><span class="tag ${x.estado === "pendiente" ? "amar" : x.estado === "enviado" ? "verde" : "gris"}">${x.estado}</span></td><td class="row"><a class="btn sm" target="_blank" rel="noopener" href="${wa(x.whatsapp)}?text=${encodeURIComponent(`Hola ${x.nombre.split(" ")[0]}, desde MIMO te recordamos que ya toca lavar tu ${VEH[x.tipo].toLowerCase()}. Reserva en minutos en nuestra web.`)}">WhatsApp</a><button class="btn sm ok" data-id="${x.id}" data-e="enviado">Enviado</button><button class="btn sm mal" data-id="${x.id}" data-e="cancelado">Descartar</button></td></tr>`).join("") || '<tr><td colspan="5" class="meta">Sin recordatorios. Pulsa «Generar».</td></tr>'}</tbody></table></div></div>`;
   $("#gen").onclick = () => guard(async () => { const g = await API.post("/admin/recordatorios/generar"); flash(`${g.nuevos} recordatorio(s) nuevos`); tRec(); });
   A.querySelectorAll("[data-e]").forEach((b) => b.onclick = () => guard(async () => { await API.post(`/admin/recordatorios/${b.dataset.id}/estado`, { estado: b.dataset.e }); tRec(); })); }); }
-function tDuenos() { guard(async () => {
-  const [D, L] = await Promise.all([API.get("/admin/duenos"), API.get("/admin/lavaderos")]);
-  $("#cont").innerHTML = `<div class="panel"><h3>Crear cuenta de dueño</h3><p class="meta">Entrega al dueño el usuario y la contraseña. Entrará en <b>/lavadero.html</b> y solo verá su lavadero.</p>
-   <form id="df" class="grid-f"><label class="f">Lavadero<select name="lavadero_id">${L.map((l) => `<option value="${l.id}">${l.id}. ${esc(l.nombre)}</option>`).join("")}</select></label>
-   <label class="f">Usuario<input name="usuario" required placeholder="ej: wilson.centro"></label><label class="f">Contraseña (mín. 8)<input name="password" type="text" minlength="8" required></label><div style="align-self:end"><button class="btn">Crear cuenta</button></div></form></div>
-  <div class="panel"><h3>Cuentas existentes</h3><div class="scroll"><table><thead><tr><th>Usuario</th><th>Lavadero</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>${D.map((d) => `<tr><td>${esc(d.usuario)}</td><td>${esc(d.lavadero)}</td><td><span class="tag ${d.activo ? "verde" : "gris"}">${d.activo ? "activa" : "desactivada"}</span></td><td class="row"><button class="btn sm" data-pw="${d.id}">Nueva contraseña</button><button class="btn sm ${d.activo ? "mal" : "ok"}" data-act="${d.id}" data-v="${d.activo ? 0 : 1}">${d.activo ? "Desactivar" : "Activar"}</button></td></tr>`).join("") || '<tr><td colspan="4" class="meta">Aún no hay cuentas de dueños</td></tr>'}</tbody></table></div></div>`;
-  $("#df").onsubmit = (e) => { e.preventDefault(); guard(async () => { const b = {}; new FormData(e.target).forEach((v, k) => b[k] = v); await API.post("/admin/duenos", b); flash("Cuenta creada"); tDuenos(); }); };
-  A.querySelectorAll("[data-pw]").forEach((b) => b.onclick = () => { const p = prompt("Nueva contraseña (mín. 8 caracteres):"); if (p) guard(async () => { await API.put("/admin/duenos/" + b.dataset.pw, { password: p }); flash("Contraseña actualizada"); }); });
-  A.querySelectorAll("[data-act]").forEach((b) => b.onclick = () => guard(async () => { await API.put("/admin/duenos/" + b.dataset.act, { activo: +b.dataset.v }); tDuenos(); })); }); }
 iniciar();

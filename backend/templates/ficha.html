@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% set robots = 'index,follow' if l.idx else 'noindex,follow' %}
+{% block title %}{{ l.nombre }} · Lavadero en {{ l.barrio or l.zona }}, Santa Marta | MIMO{% endblock %}
+{% block main %}
+<nav aria-label="Ruta de navegación" class="meta"><a href="/">Inicio</a> › {% if zona_idx %}<a href="/zona/{{ slugify(l.zona) }}">Lavaderos en {{ zona_txt(l.zona) }}</a> › {% endif %}{{ l.nombre }}</nav>
+<div class="cols" style="margin-top:12px"><div>
+  <div class="panel">
+    <h1 style="font-size:2rem">{{ l.nombre }}</h1>
+    <p>Lavadero de vehículos en {{ l.barrio or l.zona }}, Santa Marta{% if l.tipo %}. Servicios listados: {{ l.tipo }}{% endif %}.</p>
+    {% if not l.horario_publicado %}<div class="msg info">El listado no publica el horario de este lavadero. Las reservas quedan pendientes hasta que se confirme.</div>{% endif %}
+  </div>
+  <div class="panel"><h2 style="font-size:1.3rem">Servicios y precios de referencia (COP)</h2>
+    {% if S %}<div class="scroll"><table><thead><tr><th>Servicio</th><th>Duración</th><th>Automóvil</th><th>Camioneta</th><th>SUV</th><th>Moto</th></tr></thead><tbody>
+    {% for s in S %}<tr><th scope="row" style="text-align:left"><b>{{ s.nombre }}</b><div class="meta">{{ s.descripcion }}</div></th><td>{{ s.duracion_min }} min</td>
+      {% for k in ['auto','camioneta','suv','moto'] %}{% set p = s['precio_' ~ k] %}<td>{% if p %}${{ '{:,.0f}'.format(p).replace(',', '.') }}{% else %}—{% endif %}</td>{% endfor %}</tr>{% endfor %}
+    </tbody></table></div>{% else %}<p class="meta">Este lavadero aún no tiene servicios cargados.</p>{% endif %}
+    <p class="meta">Precios de referencia; el lavadero puede confirmar la tarifa final.</p></div>
+</div>
+<aside class="panel"><h2 style="font-size:1.3rem">Información</h2>
+  <p><b>Dirección:</b> {{ l.direccion }}<br><span class="meta">{{ l.barrio }} · {{ l.zona }}</span></p>
+  <p><b>Horario:</b> {{ l.horario_txt or 'No publicado' }}</p>
+  <p><b>Teléfono:</b> {% if l.telefono %}<a href="tel:{{ l.telefono|replace(' ','')|replace('(','')|replace(')','') }}">{{ l.telefono }}</a>{% else %}No publicado{% endif %}</p>
+  <p class="meta">Atiende: {{ atiende }}</p>
+  <div class="row"><a class="btn cta" href="/#/reservar/{{ l.id }}">Reservar en este lavadero</a>
+  <a class="btn ghost" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query={{ (l.nombre ~ ' ' ~ l.direccion ~ ' Santa Marta Colombia')|urlencode }}">Abrir en Google Maps</a></div>
+  <p class="meta" style="margin-top:12px">MIMO es una plataforma de reservas; el servicio lo presta el lavadero.</p>
+</aside></div>
+{% if otros %}<section class="panel" aria-labelledby="otros"><h2 id="otros" style="font-size:1.3rem">Otros lavaderos en {{ zona_txt(l.zona) }}</h2><ul>
+{% for o in otros %}<li><a href="/lavaderos/{{ o.id }}-{{ o.slug }}">{{ o.nombre }}</a> <span class="meta">· {{ o.direccion }}</span></li>{% endfor %}</ul></section>{% endif %}
+{% endblock %}

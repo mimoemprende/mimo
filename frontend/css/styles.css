@@ -55,3 +55,6 @@ footer{background:var(--tinta);color:#cfd9f3;padding:30px 0;margin-top:30px;font
 @media(max-width:800px){.cols{grid-template-columns:1fr}nav a.t{display:none}.hero{padding-bottom:80px}.panel{padding:16px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 label.row{flex:1 1 220px!important}
+
+.skip{position:absolute;left:-999px;top:0;background:#fff;color:var(--azul);padding:10px 14px;z-index:99;border-radius:0 0 10px 0;font-weight:700}.skip:focus{left:0}
+footer nav{margin:8px 0 0;display:block}footer nav a{padding:0}

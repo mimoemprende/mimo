@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Lavaderos de carros en {{ zt }}, Santa Marta | MIMO{% endblock %}
+{% block main %}
+<nav aria-label="Ruta de navegación" class="meta"><a href="/">Inicio</a> › Lavaderos en {{ zt }}</nav>
+<div class="panel" style="margin-top:12px"><h1 style="font-size:2rem">Lavaderos de carros en {{ zt }}, Santa Marta</h1>
+  <p>MIMO lista {{ items|length }} lavaderos de vehículos en {{ zt }}. Consulta la dirección y el horario de cada uno y reserva desde su ficha.</p>
+  {% if srv %}<p class="meta">Servicios que aparecen en esta zona: {{ srv|join(', ') }}.</p>{% endif %}</div>
+<div class="cards">{% for l in items %}<article class="card"><div class="cuerpo">
+  <h2 style="font-size:1.2rem;margin:0"><a href="/lavaderos/{{ l.id }}-{{ l.slug }}">{{ l.nombre }}</a></h2>
+  <div class="meta">{{ l.direccion }} · {{ l.barrio }}</div><div class="meta">{{ l.horario_txt or 'Horario por confirmar' }}</div><div class="meta">{{ l.tipo }}</div>
+  <div class="pie"><a class="btn ghost sm" href="/lavaderos/{{ l.id }}-{{ l.slug }}">Ver ficha</a><a class="btn cta sm" href="/#/reservar/{{ l.id }}">Reservar</a></div>
+</div></article>{% endfor %}</div>
+{% endblock %}
