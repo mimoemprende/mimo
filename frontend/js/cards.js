@@ -2,7 +2,7 @@
    Cambia aquí el diseño/campos de la tarjeta. Los datos vienen de la base de datos (admin) o de backend/seed_data.py.
    FOTOS: sube a la carpeta /fotos un archivo por lavadero llamado <ID>.png (1.png, 2.png, 3.png...).
    El ID es el número N.º del listado (Agua Bendita = 1, Lava Autos Wilson #2 = 2, ...). Sin foto, se muestra el imagotipo. */
-const fotoUrl = (id) => `fotos/${id}.png`;
+const fotoUrl = (id) => `fotos/${id}.jpg`;
 // Ficha indexable en el servidor (/lavaderos/<id>-<slug>); si el frontend está en otro dominio, se usa la ficha de la SPA.
 const fichaUrl = (l) => (window.MIMO_API || !l.slug) ? `#/l/${l.id}` : `/lavaderos/${l.id}-${l.slug}`;
 
